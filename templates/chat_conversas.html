@@ -1,0 +1,472 @@
+{% extends "chat_base.html" %}
+
+{% block title %}Conversas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .app-container {
+        display: flex;
+        min-height: 100vh;
+    }
+    
+    /* Sidebar (mesmos estilos do dashboard) */
+    .sidebar {
+        width: 260px;
+        background: var(--bg-sidebar);
+        color: var(--text-white);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        left: 0;
+        top: 0;
+        z-index: 100;
+    }
+    
+    .sidebar-header {
+        padding: 24px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-nav {
+        flex: 1;
+        padding: 20px 0;
+    }
+    
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        color: var(--text-white);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+        font-weight: 500;
+    }
+    
+    .nav-item:hover {
+        background: var(--bg-sidebar-hover);
+        border-left-color: var(--primary);
+    }
+    
+    .nav-item.active {
+        background: var(--bg-sidebar-hover);
+        border-left-color: var(--primary);
+    }
+    
+    .nav-item i {
+        width: 20px;
+        text-align: center;
+    }
+    
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+    
+    .user-details {
+        flex: 1;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .user-role {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 32px;
+        max-width: 100%;
+    }
+    
+    .page-header {
+        margin-bottom: 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .page-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    
+    .page-description {
+        font-size: 16px;
+        color: var(--text-secondary);
+    }
+    
+    .search-box {
+        max-width: 400px;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 12px 16px 12px 44px;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 14px;
+        background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2394A3B8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>') no-repeat 14px center;
+        background-size: 20px;
+        transition: all 0.2s ease;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    /* Conversas List */
+    .conversas-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .conversa-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        animation: fadeIn 0.4s ease-out backwards;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .conversa-card:hover {
+        transform: translateX(4px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary);
+    }
+    
+    .conversa-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+    
+    .conversa-id {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary);
+        background: rgba(37, 99, 235, 0.1);
+        padding: 4px 12px;
+        border-radius: 6px;
+    }
+    
+    .conversa-date {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+    
+    .conversa-preview {
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .conversa-stats {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+    
+    .stat-item i {
+        color: var(--text-muted);
+    }
+    
+    .stat-item.human i {
+        color: var(--primary);
+    }
+    
+    .stat-item.ai i {
+        color: var(--accent);
+    }
+    
+    /* Loading */
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        gap: 16px;
+    }
+    
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--border-color);
+        border-radius: 50%;
+        border-top-color: var(--primary);
+        animation: spin 1s linear infinite;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .empty-icon {
+        font-size: 64px;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+    }
+    
+    .empty-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    
+    .empty-description {
+        color: var(--text-secondary);
+    }
+    
+    /* Responsividade */
+    @media (max-width: 1024px) {
+        .sidebar {
+            width: 220px;
+        }
+        
+        .main-content {
+            margin-left: 220px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        
+        .search-box {
+            width: 100%;
+            max-width: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <img src="/static/logo2.png" alt="PUC Logo" class="logo-image"
+                     onerror="this.parentElement.innerHTML='<i class=\'fas fa-comments\' style=\'font-size:32px;color:white\'></i><span class=\'logo-text\'>PUC Chat</span>'">
+                <span class="logo-text">PUC Chat</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/conversas" class="nav-item active">
+                <i class="fas fa-comments"></i>
+                <span>Conversas</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ username[0].upper() if username else 'A' }}
+                </div>
+                <div class="user-details">
+                    <div class="user-name">{{ username }}</div>
+                    <div class="user-role">Administrador</div>
+                </div>
+            </div>
+            <a href="/logout" class="btn btn-danger" style="width: 100%; justify-content: center;">
+                <i class="fas fa-sign-out-alt"></i>
+                Sair
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Conversas</h1>
+                <p class="page-description">Navegue por todas as conversas registradas</p>
+            </div>
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="Buscar conversas..."
+                    id="searchInput"
+                >
+            </div>
+        </div>
+        
+        <div id="conversasContainer">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p style="color: var(--text-secondary);">Carregando conversas...</p>
+            </div>
+        </div>
+        
+        <div class="conversas-list" id="conversasList" style="display: none;">
+            <!-- Conversas serão inseridas aqui -->
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let allConversations = [];
+    
+    async function loadConversas() {
+        try {
+            const data = await fetchAPI('/api/conversas');
+            
+            if (data.success) {
+                allConversations = data.conversations;
+                renderConversas(allConversations);
+            }
+        } catch (error) {
+            document.getElementById('conversasContainer').innerHTML = `
+                <div class="loading-container">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #EF4444;"></i>
+                    <p style="color: var(--text-secondary);">Erro ao carregar conversas</p>
+                    <button class="btn btn-primary" onclick="loadConversas()">
+                        <i class="fas fa-redo"></i> Tentar Novamente
+                    </button>
+                </div>
+            `;
+        }
+    }
+    
+    function renderConversas(conversations) {
+        const conversasList = document.getElementById('conversasList');
+        const conversasContainer = document.getElementById('conversasContainer');
+        
+        if (conversations.length === 0) {
+            conversasContainer.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3 class="empty-title">Nenhuma conversa encontrada</h3>
+                    <p class="empty-description">As conversas aparecerão aqui quando forem registradas no sistema.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        conversasList.innerHTML = conversations.map((conv, index) => `
+            <a href="/conversa/${conv.session_id}" class="conversa-card" style="animation-delay: ${index * 0.05}s">
+                <div class="conversa-header">
+                    <span class="conversa-id">${conv.session_id}</span>
+                    <span class="conversa-date">${formatRelativeTime(conv.last_message)}</span>
+                </div>
+                <div class="conversa-preview">${conv.preview}</div>
+                <div class="conversa-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>${conv.message_count} mensagens</span>
+                    </div>
+                    <div class="stat-item human">
+                        <i class="fas fa-user"></i>
+                        <span>${conv.human_count} usuário</span>
+                    </div>
+                    <div class="stat-item ai">
+                        <i class="fas fa-robot"></i>
+                        <span>${conv.ai_count} IA</span>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+        
+        conversasContainer.style.display = 'none';
+        conversasList.style.display = 'flex';
+    }
+    
+    // Busca
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        
+        if (!searchTerm) {
+            renderConversas(allConversations);
+            return;
+        }
+        
+        const filtered = allConversations.filter(conv => 
+            conv.session_id.toLowerCase().includes(searchTerm) ||
+            conv.preview.toLowerCase().includes(searchTerm)
+        );
+        
+        renderConversas(filtered);
+    });
+    
+    // Carregar conversas ao iniciar
+    loadConversas();
+</script>
+{% endblock %}

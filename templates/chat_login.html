@@ -1,0 +1,207 @@
+{% extends "chat_base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+    }
+    
+    .login-box {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        padding: 48px 40px;
+        width: 100%;
+        max-width: 440px;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    .login-logo-section {
+        text-align: center;
+        margin-bottom: 36px;
+    }
+    
+    .login-logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        background: white;
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .login-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .login-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    
+    .login-subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+    
+    .login-form {
+        margin-top: 32px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+    
+    .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border-left: 4px solid #EF4444;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #EF4444;
+        font-size: 14px;
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .submit-btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 15px;
+        margin-top: 8px;
+    }
+    
+    @media (max-width: 768px) {
+        .login-box {
+            padding: 32px 24px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-box">
+        <div class="login-logo-section">
+            <div class="login-logo">
+                <img src="/static/logo.png" alt="PUC Logo" onerror="this.parentElement.innerHTML='<i class=\'fas fa-comments\' style=\'font-size:48px;color:var(--primary)\'></i>'">
+            </div>
+        </div>
+        
+        <form class="login-form" id="loginForm">
+            <div id="errorContainer"></div>
+            
+            <div class="form-group">
+                <label class="form-label" for="username">
+                    <i class="fas fa-user"></i> Usuário
+                </label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    class="input-field" 
+                    placeholder="Digite seu usuário"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="password">
+                    <i class="fas fa-lock"></i> Senha
+                </label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="input-field" 
+                    placeholder="Digite sua senha"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+            
+            <button type="submit" class="btn btn-primary submit-btn" id="submitBtn">
+                <i class="fas fa-sign-in-alt"></i>
+                <span id="btnText">Entrar</span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const errorContainer = document.getElementById('errorContainer');
+    
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        errorContainer.innerHTML = '';
+        submitBtn.disabled = true;
+        btnText.innerHTML = '<span class="spinner"></span> Entrando...';
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showNotification('Login realizado com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 500);
+            } else {
+                throw new Error(data.message || 'Credenciais inválidas');
+            }
+        } catch (error) {
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>${error.message}</span>
+                </div>
+            `;
+            
+            submitBtn.disabled = false;
+            btnText.innerHTML = 'Entrar';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,433 @@
+{% extends "chat_base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .app-container {
+        display: flex;
+        min-height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: var(--bg-sidebar);
+        color: var(--text-white);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        height: 100vh;
+        left: 0;
+        top: 0;
+        z-index: 100;
+    }
+    
+    .sidebar-header {
+        padding: 24px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .sidebar-nav {
+        flex: 1;
+        padding: 20px 0;
+    }
+    
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        color: var(--text-white);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+        font-weight: 500;
+    }
+    
+    .nav-item:hover {
+        background: var(--bg-sidebar-hover);
+        border-left-color: var(--primary);
+    }
+    
+    .nav-item.active {
+        background: var(--bg-sidebar-hover);
+        border-left-color: var(--primary);
+    }
+    
+    .nav-item i {
+        width: 20px;
+        text-align: center;
+    }
+    
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+    
+    .user-details {
+        flex: 1;
+    }
+    
+    .user-name {
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
+    .user-role {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+    
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 32px;
+        max-width: 100%;
+    }
+    
+    .page-header {
+        margin-bottom: 32px;
+    }
+    
+    .page-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    
+    .page-description {
+        font-size: 16px;
+        color: var(--text-secondary);
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        animation: fadeIn 0.6s ease-out backwards;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+    
+    .stat-icon.blue {
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--primary);
+    }
+    
+    .stat-icon.green {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent);
+    }
+    
+    .stat-icon.purple {
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--secondary);
+    }
+    
+    .stat-icon.orange {
+        background: rgba(245, 158, 11, 0.1);
+        color: #F59E0B;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+    
+    .stat-value {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+    
+    .stat-change {
+        font-size: 13px;
+        color: var(--accent);
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    /* Loading */
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        gap: 16px;
+    }
+    
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--border-color);
+        border-radius: 50%;
+        border-top-color: var(--primary);
+        animation: spin 1s linear infinite;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 1024px) {
+        .sidebar {
+            width: 220px;
+        }
+        
+        .main-content {
+            margin-left: 220px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <img src="/static/logo2.png" alt="PUC Logo" class="logo-image"
+                     onerror="this.parentElement.innerHTML='<i class=\'fas fa-comments\' style=\'font-size:32px;color:white\'></i><span class=\'logo-text\'>PUC Chat</span>'">
+                <span class="logo-text">PUC Chat</span>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item active">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/conversas" class="nav-item">
+                <i class="fas fa-comments"></i>
+                <span>Conversas</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ username[0].upper() if username else 'A' }}
+                </div>
+                <div class="user-details">
+                    <div class="user-name">{{ username }}</div>
+                    <div class="user-role">Administrador</div>
+                </div>
+            </div>
+            <a href="/logout" class="btn btn-danger" style="width: 100%; justify-content: center;">
+                <i class="fas fa-sign-out-alt"></i>
+                Sair
+            </a>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-description">Visão geral das conversas e mensagens</p>
+        </div>
+        
+        <div id="statsContainer">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p style="color: var(--text-secondary);">Carregando estatísticas...</p>
+            </div>
+        </div>
+        
+        <div class="stats-grid" id="statsGrid" style="display: none;">
+            <!-- Stats serão inseridos aqui -->
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadStats() {
+        try {
+            const data = await fetchAPI('/api/stats');
+            
+            if (data.success) {
+                renderStats(data);
+            }
+        } catch (error) {
+            document.getElementById('statsContainer').innerHTML = `
+                <div class="loading-container">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #EF4444;"></i>
+                    <p style="color: var(--text-secondary);">Erro ao carregar estatísticas</p>
+                    <button class="btn btn-primary" onclick="loadStats()">
+                        <i class="fas fa-redo"></i> Tentar Novamente
+                    </button>
+                </div>
+            `;
+        }
+    }
+    
+    function renderStats(data) {
+        const statsGrid = document.getElementById('statsGrid');
+        const statsContainer = document.getElementById('statsContainer');
+        
+        statsGrid.innerHTML = `
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Total de Conversas</div>
+                        <div class="stat-value">${data.total_conversations.toLocaleString('pt-BR')}</div>
+                        <div class="stat-change">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>Conversas únicas</span>
+                        </div>
+                    </div>
+                    <div class="stat-icon blue">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Total de Mensagens</div>
+                        <div class="stat-value">${data.total_messages.toLocaleString('pt-BR')}</div>
+                        <div class="stat-change">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>Todas as mensagens</span>
+                        </div>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Mensagens de Usuários</div>
+                        <div class="stat-value">${data.human_messages.toLocaleString('pt-BR')}</div>
+                        <div class="stat-change">
+                            <i class="fas fa-user"></i>
+                            <span>Mensagens humanas</span>
+                        </div>
+                    </div>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <div class="stat-label">Respostas da IA</div>
+                        <div class="stat-value">${data.ai_messages.toLocaleString('pt-BR')}</div>
+                        <div class="stat-change">
+                            <i class="fas fa-robot"></i>
+                            <span>Respostas automáticas</span>
+                        </div>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        statsContainer.style.display = 'none';
+        statsGrid.style.display = 'grid';
+    }
+    
+    // Carregar stats ao iniciar
+    loadStats();
+    
+    // Atualizar a cada 30 segundos
+    setInterval(loadStats, 30000);
+</script>
+{% endblock %}
